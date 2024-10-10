@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Frontend</title>
+</head>
+<body>
+    <h1>Document Management Frontend</h1>
+
+    <!-- Buttons for Upload, Manage, and Delete -->
+    <button id="uploadButton">Upload Document</button>
+    <button id="manageButton">Manage Documents</button>
+    <button id="deleteButton">Delete Document</button>
+
+    <!-- Area to display API responses -->
+    <div id="response"></div>
+
+    <script>
+        // Upload Button Click Handler
+        document.getElementById('uploadButton').addEventListener('click', function () {
+            fetch("http://localhost:8081/api/upload", {
+                method: "POST",
+                body: new FormData(), // Sending empty form data for now
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("response").innerText = "Upload Response: " + data.message;
+                })
+                .catch(error => console.error('Error:', error));
+        });
+
+        // Manage Button Click Handler
+        document.getElementById('manageButton').addEventListener('click', function () {
+            fetch("http://localhost:8081/api/manage")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("response").innerText = "Manage Response: " + data.message;
+                })
+                .catch(error => console.error('Error:', error));
+        });
+
+        // Delete Button Click Handler
+        document.getElementById('deleteButton').addEventListener('click', function () {
+            fetch("http://localhost:8081/api/delete", {
+                method: "DELETE"
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("response").innerText = "Delete Response: " + data.message;
+                })
+                .catch(error => console.error('Error:', error));
+        });
+
+    </script>
+</body>
+</html>

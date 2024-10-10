@@ -4,4 +4,15 @@ services:
   webapi:
     build: .
     ports:
-      - "8081:8081"
+      - "8081:8081"  # Ensure it maps to the internal port 80 where the ASP.NET server runs
+    container_name: webapi
+
+  webfrontend:
+    build:
+      context: ../Paperless_Frontend  # Assuming your frontend is in this folder
+      dockerfile: Dockerfile        # Path to the Dockerfile for the frontend
+    ports:
+      - "8080:8080"  # This exposes the frontend on port 8080
+    container_name: webfrontend
+    depends_on:
+      - webapi  # Ensures the frontend waits for the API service
