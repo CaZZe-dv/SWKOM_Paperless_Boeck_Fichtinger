@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35312.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless", "Paperless\Paperless.csproj", "{3392569E-5679-44CB-AC09-311319018A92}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paperless", "Paperless\Paperless.csproj", "{3392569E-5679-44CB-AC09-311319018A92}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless_ui", "Paperless_ui\Paperless_ui.csproj", "{3C9D1813-2372-4013-BB73-C03D2CE0E62F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{3392569E-5679-44CB-AC09-311319018A92}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3392569E-5679-44CB-AC09-311319018A92}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3392569E-5679-44CB-AC09-311319018A92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C9D1813-2372-4013-BB73-C03D2CE0E62F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C9D1813-2372-4013-BB73-C03D2CE0E62F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C9D1813-2372-4013-BB73-C03D2CE0E62F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C9D1813-2372-4013-BB73-C03D2CE0E62F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

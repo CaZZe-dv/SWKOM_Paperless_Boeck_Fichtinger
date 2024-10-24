@@ -13,5 +13,11 @@ namespace Paperless.Controllers
         {
             return Ok(new { message = "Paperless project response" });
         }
+
+        [HttpGet ("UI")]
+        public IActionResult GetUIResponse()
+        {
+            return Ok(new { message = "Seas das geht an die UI" });
+        }
     }
 }

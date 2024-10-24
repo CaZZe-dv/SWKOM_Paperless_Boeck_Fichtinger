@@ -1,7 +1,22 @@
 ﻿version: '3.8'
 
 services:
-  webapi:
+  restapi:
     build: .
     ports:
       - "8081:8081"
+    networks:
+      - paperless-network
+
+  webserver:
+    build:
+      context: ../Paperless_ui     # Zugriff auf das UI-Projekt im übergeordneten Verzeichnis
+      dockerfile: Dockerfile        # Dockerfile im Paperless_ui-Verzeichnis
+    ports:
+      - "80:80"
+    networks:
+      - paperless-network
+
+networks:
+  paperless-network:
+    driver: bridge
