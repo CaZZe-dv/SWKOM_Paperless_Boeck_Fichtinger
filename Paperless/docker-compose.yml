@@ -9,7 +9,7 @@ services:
       - paperless-network
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=paperless_db;Username=your_user;Password=your_password
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=paperless_db;Username=admin;Password=ppl1234
     depends_on:
       - db
 

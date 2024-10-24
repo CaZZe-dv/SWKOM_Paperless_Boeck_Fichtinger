@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Paperless/Data/ApplicationDbContext.cs
+using Microsoft.EntityFrameworkCore;
 using Paperless.Data.Entities;
 
 namespace Paperless.Data
@@ -11,5 +12,11 @@ namespace Paperless.Data
         }
 
         public DbSet<Document> Documents { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            // Weitere Konfigurationen hier (z.B. Indizes, Constraints)
+        }
     }
 }

@@ -1,8 +1,9 @@
-﻿using Paperless.Data.Entities;
+﻿// Paperless/Data/Repositories/DocumentRepository.cs
+using Paperless.Data.Entities;
 
 namespace Paperless.Data.Repositories
 {
-    public class DocumentRepository : IDocumentRepository
+    public class DocumentRepository
     {
         private readonly ApplicationDbContext _context;
 
@@ -11,15 +12,11 @@ namespace Paperless.Data.Repositories
             _context = context;
         }
 
-        public void AddDocument(Document document)
+        public async Task<Document> AddDocument(Document document)
         {
-            _context.Documents.Add(document);
-            _context.SaveChanges();
-        }
-
-        public IEnumerable<Document> GetAllDocuments()
-        {
-            return _context.Documents.ToList();
+            await _context.Documents.AddAsync(document);
+            await _context.SaveChangesAsync();
+            return document;
         }
     }
 }

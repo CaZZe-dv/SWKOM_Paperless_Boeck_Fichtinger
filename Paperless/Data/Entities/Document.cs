@@ -6,8 +6,8 @@ namespace Paperless.Data.Entities
     {
         [Key]
         public int Id { get; set; }
-        public string Name { get; set; }
-        public byte[] Content { get; set; }
-        // Additional properties can be added here
+        public string? Title { get; set; }
+        public byte[]? Content { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }
