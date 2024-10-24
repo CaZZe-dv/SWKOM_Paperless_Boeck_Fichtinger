@@ -7,16 +7,34 @@ services:
       - "8081:8081"
     networks:
       - paperless-network
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=paperless_db;Username=your_user;Password=your_password
+    depends_on:
+      - db
 
   webserver:
     build:
-      context: ../Paperless_ui     # Zugriff auf das UI-Projekt im übergeordneten Verzeichnis
-      dockerfile: Dockerfile        # Dockerfile im Paperless_ui-Verzeichnis
+      context: ../Paperless_ui
+      dockerfile: Dockerfile
     ports:
       - "80:80"
     networks:
       - paperless-network
+      
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+        POSTGRES_DB: paperless_db
+        POSTGRES_USER: admin
+        POSTGRES_PASSWORD: ppl1234
+    volumes:
+        - db_data:/var/lib/postgresql/data
 
 networks:
   paperless-network:
     driver: bridge
+
+volumes:
+  db_data:
