@@ -8,14 +8,143 @@
 <body>
     <h1>Willkommen beim Paperless Project!</h1>
     <p>Dies ist eine einfache UI, die mit Nginx bereitgestellt wird.</p>
-    <p>API-Anfrage: <a href="/api/test/ui">Klicken Sie hier, um die API zu testen</a></p>
+    <p>API-Anfrage: <a href="/api/test/ui" target="_blank">Klicken Sie hier, um die API zu testen</a></p>
 
     <h2>Use Cases</h2>
-    <ul>
-        <li><a href="/api/test/upload" target="_blank">Dokument hochladen (Platzhalter)</a></li>
-        <li><a href="/api/test/search?query=example" target="_blank">Dokument suchen (Platzhalter)</a></li>
-        <li><a href="/api/test/update/1" target="_blank">Dokument aktualisieren (ID 1, Platzhalter)</a></li>
-        <li><a href="/api/test/delete/1" target="_blank">Dokument löschen (ID 1, Platzhalter)</a></li>
-    </ul>
+
+    <!-- Upload Document Form -->
+    <h3>Dokument hochladen</h3>
+    <form id="uploadForm" method="post">
+        <label for="name">Name des Dokuments:</label>
+        <input type="text" id="name" name="name" required><br><br>
+        <label for="content">Inhalt des Dokuments:</label>
+        <textarea id="content" name="content" required></textarea><br><br>
+        <label for="uploadDate">Upload-Datum:</label>
+        <input type="datetime-local" id="uploadDate" name="uploadDate" required><br><br>
+        <button type="submit">Dokument hochladen</button>
+    </form>
+    <p id="uploadStatus"></p>
+
+    <br><br>
+
+    <!-- Search Document -->
+    <h3>Dokument suchen</h3>
+    <form id="searchForm" method="get">
+        <label for="query">Suchanfrage:</label>
+        <input type="text" id="query" name="query" required><br><br>
+        <button type="submit">Dokument suchen</button>
+    </form>
+    <p id="searchResults"></p>
+
+    <br><br>
+
+    <!-- Update Document -->
+    <h3>Dokument aktualisieren</h3>
+    <form id="updateForm" method="put">
+        <label for="updateId">Dokumenten ID (zum Aktualisieren):</label>
+        <input type="number" id="updateId" name="updateId" required><br><br>
+        <label for="updateContent">Neuer Inhalt:</label>
+        <textarea id="updateContent" name="updateContent" required></textarea><br><br>
+        <label for="updateDate">Aktualisierungsdatum:</label>
+        <input type="datetime-local" id="updateDate" name="updateDate" required><br><br>
+        <button type="submit">Dokument aktualisieren</button>
+    </form>
+    <p id="updateStatus"></p>
+
+    <br><br>
+
+    <!-- Delete Document -->
+    <h3>Dokument löschen</h3>
+    <form id="deleteForm" method="delete">
+        <label for="deleteId">Dokumenten ID (zum Löschen):</label>
+        <input type="number" id="deleteId" name="deleteId" required><br><br>
+        <button type="submit">Dokument löschen</button>
+    </form>
+    <p id="deleteStatus"></p>
+
+    <script>
+        // Handle document upload
+        document.getElementById('uploadForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            const name = formData.get('name');
+            const content = formData.get('content');
+            const uploadDate = formData.get('uploadDate');
+
+            fetch('/api/test/upload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, content, uploadDate })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('uploadStatus').innerText = "Dokument erfolgreich hochgeladen!";
+                })
+                .catch(error => {
+                    document.getElementById('uploadStatus').innerText = "Fehler beim Hochladen des Dokuments.";
+                });
+        });
+
+        // Handle document search
+        document.getElementById('searchForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const query = document.getElementById('query').value;
+
+            fetch(`/api/test/search?query=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('searchResults').innerText = `Suchergebnisse: ${JSON.stringify(data)}`;
+                })
+                .catch(error => {
+                    document.getElementById('searchResults').innerText = "Fehler bei der Suche.";
+                });
+        });
+
+        // Handle document update
+        document.getElementById('updateForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const id = document.getElementById('updateId').value;
+            const content = document.getElementById('updateContent').value;
+            const updateDate = document.getElementById('updateDate').value;
+
+            fetch(`/api/test/update/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content, updateDate })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('updateStatus').innerText = `Dokument mit ID ${id} erfolgreich aktualisiert.`;
+                })
+                .catch(error => {
+                    document.getElementById('updateStatus').innerText = "Fehler beim Aktualisieren des Dokuments.";
+                });
+        });
+
+        // Handle document delete
+        document.getElementById('deleteForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const id = document.getElementById('deleteId').value;
+
+            fetch(`/api/test/delete/${id}`, {
+                method: 'DELETE',
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('deleteStatus').innerText = `Dokument mit ID ${id} erfolgreich gelöscht.`;
+                })
+                .catch(error => {
+                    document.getElementById('deleteStatus').innerText = "Fehler beim Löschen des Dokuments.";
+                });
+        });
+    </script>
 </body>
 </html>

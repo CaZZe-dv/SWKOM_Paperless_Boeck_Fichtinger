@@ -1,6 +1,15 @@
+using Microsoft.EntityFrameworkCore;
+using Paperless.Database;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//For Mapping purposes
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+//Postgresql configuration
+var conn = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<DatabaseDbContext>(options => options.UseNpgsql(conn));
 
 // Add services to the container.
 builder.Services.AddControllers();

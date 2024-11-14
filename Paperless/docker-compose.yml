@@ -3,6 +3,10 @@
 services:
   restapi:
     build: .
+    depends_on:
+      - "db"
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=db;Database=postgres;Username=postgres;Password=postgres"
     ports:
       - "8081:8081"
     networks:
@@ -10,12 +14,29 @@ services:
 
   webserver:
     build:
-      context: ../Paperless_ui     # Zugriff auf das UI-Projekt im übergeordneten Verzeichnis
-      dockerfile: Dockerfile        # Dockerfile im Paperless_ui-Verzeichnis
+      context: ../Paperless_ui  # Zugriff auf das UI-Projekt im übergeordneten Verzeichnis
+      dockerfile: Dockerfile    # Dockerfile im Paperless_ui-Verzeichnis
     ports:
       - "80:80"
     networks:
       - paperless-network
+
+  db:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - 5432:5432
+    restart: always
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - paperless-network
+
+volumes:
+  pgdata: {}
 
 networks:
   paperless-network:
