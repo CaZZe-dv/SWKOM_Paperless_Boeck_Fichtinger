@@ -13,14 +13,15 @@
     <h2>Use Cases</h2>
 
     <!-- Upload Document Form -->
-    <h3>Dokument hochladen</h3>
-    <form id="uploadForm" method="post">
+    <h3>PDF-Dokument hochladen</h3>
+    <form id="uploadForm" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="_method" value="PUT">
         <label for="name">Name des Dokuments:</label>
         <input type="text" id="name" name="name" required><br><br>
-        <label for="content">Inhalt des Dokuments:</label>
-        <textarea id="content" name="content" required></textarea><br><br>
-        <label for="uploadDate">Upload-Datum:</label>
-        <input type="datetime-local" id="uploadDate" name="uploadDate" required><br><br>
+
+        <label for="file">PDF-Datei:</label>
+        <input type="file" id="file" name="file" accept="application/pdf" required><br><br>
+
         <button type="submit">Dokument hochladen</button>
     </form>
     <p id="uploadStatus"></p>
@@ -30,9 +31,9 @@
     <!-- Search Document -->
     <h3>Dokument suchen</h3>
     <form id="searchForm" method="get">
-        <label for="query">Suchanfrage:</label>
-        <input type="text" id="query" name="query" required><br><br>
-        <button type="submit">Dokument suchen</button>
+        <label for="query">Dokumenten-ID:</label>
+        <input type="number" id="query" name="query" required><br><br>
+        <button type="submit">Dokumentname suchen</button>
     </form>
     <p id="searchResults"></p>
 
@@ -40,13 +41,11 @@
 
     <!-- Update Document -->
     <h3>Dokument aktualisieren</h3>
-    <form id="updateForm" method="put">
-        <label for="updateId">Dokumenten ID (zum Aktualisieren):</label>
+    <form id="updateForm" method="put" enctype="multipart/form-data">
+        <label for="updateId">Dokumenten-ID:</label>
         <input type="number" id="updateId" name="updateId" required><br><br>
-        <label for="updateContent">Neuer Inhalt:</label>
-        <textarea id="updateContent" name="updateContent" required></textarea><br><br>
-        <label for="updateDate">Aktualisierungsdatum:</label>
-        <input type="datetime-local" id="updateDate" name="updateDate" required><br><br>
+        <label for="updateFile">Neues PDF-Datei:</label>
+        <input type="file" id="updateFile" name="updateFile" accept="application/pdf" required><br><br>
         <button type="submit">Dokument aktualisieren</button>
     </form>
     <p id="updateStatus"></p>
@@ -64,28 +63,28 @@
 
     <script>
         // Handle document upload
-        document.getElementById('uploadForm').addEventListener('submit', function (event) {
+        document.getElementById('uploadForm').addEventListener('submit', async function (event) {
             event.preventDefault();
 
-            const formData = new FormData(this);
-            const name = formData.get('name');
-            const content = formData.get('content');
-            const uploadDate = formData.get('uploadDate');
+            const formData = new FormData();
+            formData.append('name', document.getElementById('name').value);
+            formData.append('file', document.getElementById('file').files[0]);
 
-            fetch('/api/test/upload', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name, content, uploadDate })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('uploadStatus').innerText = "Dokument erfolgreich hochgeladen!";
-                })
-                .catch(error => {
-                    document.getElementById('uploadStatus').innerText = "Fehler beim Hochladen des Dokuments.";
+            try {
+                const response = await fetch('/api/test/upload', {
+                    method: 'POST',
+                    body: formData
                 });
+
+                if (!response.ok) {
+                    throw new Error("Fehler beim Hochladen des Dokuments");
+                }
+
+                const result = await response.json();
+                document.getElementById('uploadStatus').innerText = result.message || "Fehler beim Hochladen des Dokuments.";
+            } catch (error) {
+                document.getElementById('uploadStatus').innerText = error.message;
+            }
         });
 
         // Handle document search
@@ -94,38 +93,39 @@
 
             const query = document.getElementById('query').value;
 
-            fetch(`/api/test/search?query=${query}`)
-                .then(response => response.json())
+            fetch(`/api/test/get/${query}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Dokument nicht gefunden");
+                    return response.json();
+                })
                 .then(data => {
-                    document.getElementById('searchResults').innerText = `Suchergebnisse: ${JSON.stringify(data)}`;
+                    document.getElementById('searchResults').innerText = `Dokumentname: ${data.name}`;
                 })
                 .catch(error => {
-                    document.getElementById('searchResults').innerText = "Fehler bei der Suche.";
+                    document.getElementById('searchResults').innerText = error.message || "Fehler bei der Suche.";
                 });
         });
 
         // Handle document update
-        document.getElementById('updateForm').addEventListener('submit', function (event) {
+        document.getElementById('updateForm').addEventListener('submit', async function (event) {
             event.preventDefault();
 
             const id = document.getElementById('updateId').value;
-            const content = document.getElementById('updateContent').value;
-            const updateDate = document.getElementById('updateDate').value;
+            const file = document.getElementById('updateFile').files[0];
+            const formData = new FormData();
+            formData.append('file', file);
 
-            fetch(`/api/test/update/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ content, updateDate })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('updateStatus').innerText = `Dokument mit ID ${id} erfolgreich aktualisiert.`;
-                })
-                .catch(error => {
-                    document.getElementById('updateStatus').innerText = "Fehler beim Aktualisieren des Dokuments.";
+            try {
+                const response = await fetch(`/api/test/update/${id}`, {
+                    method: 'PUT',
+                    body: formData
                 });
+
+                const result = await response.json();
+                document.getElementById('updateStatus').innerText = result.message || "Fehler beim Aktualisieren des Dokuments.";
+            } catch (error) {
+                document.getElementById('updateStatus').innerText = "Fehler beim Aktualisieren des Dokuments.";
+            }
         });
 
         // Handle document delete

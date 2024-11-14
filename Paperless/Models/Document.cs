@@ -10,7 +10,7 @@ namespace Paperless.Models
         [Column("name")]
         public string Name { get; set; }
         [Column("content")]
-        public string Content { get; set; }
+        public byte[] Content { get; set; }
         [Column("uploaddate")]
         public DateTime UploadDate { get; set; }
 

@@ -20,27 +20,69 @@ namespace Paperless.Controllers
             _context = context;
         }
 
+
+        // ================== test cases ==================
+        /// <summary>
+        /// Gibt ersten Response zurück
+        /// </summary>
+        /// <returns>Ein JSON-Objekt mit einer Nachricht</returns>
+        [HttpGet]
+        public IActionResult Get()
+        {
+            return Ok(new { message = "Paperless project response" });
+        }
+
+        /// <summary>
+        /// Gibt die Testnachricht für die UI zurück
+        /// </summary>
+        /// <returns>Ein JSON-Objekt mit einer UI-spezifischen Nachricht</returns>
+        [HttpGet("UI")]
+        public IActionResult GetUIResponse()
+        {
+            return Ok(new { message = "Seas das geht an die UI" });
+        }
+
+
+
         // ================== CREATE ==================
 
         /// <summary>
         /// Lädt ein neues Dokument hoch.
         /// </summary>
         /// <returns>Eine Bestätigung des Uploads</returns>
-        [HttpPost("UPLOAD")]
-        public async Task<IActionResult> UploadDocument([FromBody] Document document)
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadDocument([FromForm] IFormFile file, [FromForm] string name)
         {
-            // Ensure the document is not null
-            if (document == null)
+            if (file == null || file.Length == 0)
             {
-                return BadRequest(new { message = "Kein Dokument bereitgestellt." });
+                return BadRequest("Keine Datei hochgeladen.");
             }
 
-            // Add the document to the database
-            _context.Add(document);
-            await _context.SaveChangesAsync();
+            byte[] fileBytes;
+            using (var memoryStream = new MemoryStream())
+            {
+                await file.CopyToAsync(memoryStream);
+                fileBytes = memoryStream.ToArray();
+            }
 
-            // Return the added document with a success message
-            return Ok(new { message = "Dokument erfolgreich hochgeladen.", document });
+            var document = new Document
+            {
+                Name = name,
+                Content = fileBytes,
+                UploadDate = DateTime.UtcNow
+            };
+
+            try
+    {
+                _context.Documents.Add(document);
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Dokument erfolgreich hochgeladen." });
+            }catch (Exception ex)
+            {
+                // Logge den Fehler
+                Console.WriteLine($"Fehler beim Speichern des Dokuments: {ex.Message}");
+                return StatusCode(500, "Fehler beim Speichern des Dokuments.");
+            }
         }
 
         // ================== READ ==================
@@ -62,14 +104,14 @@ namespace Paperless.Controllers
         /// <param name="id">Die ID des Dokuments</param>
         /// <returns>Das Dokument mit der angegebenen ID</returns>
         [HttpGet("GET/{id}")]
-        public async Task<IActionResult> GetDocument(int id)
+        public async Task<IActionResult> GetDocumentName(int id)
         {
             var document = await _context.Documents.FirstOrDefaultAsync(d => d.Id == id);
             if (document == null)
             {
                 return NotFound(new { message = $"Dokument mit ID {id} nicht gefunden." });
             }
-            return Ok(document);
+            return Ok(new { document.Name });
         }
 
         // ================== UPDATE ==================
@@ -81,21 +123,28 @@ namespace Paperless.Controllers
         /// <param name="document">Das aktualisierte Dokument</param>
         /// <returns>Eine Bestätigung der Aktualisierung</returns>
         [HttpPut("UPDATE/{id}")]
-        public async Task<IActionResult> UpdateDocument(int id, [FromBody] Document document)
+        public async Task<IActionResult> UpdateDocument(int id, [FromForm] IFormFile file)
         {
-            // Check if document exists
             var existingDocument = await _context.Documents.FirstOrDefaultAsync(d => d.Id == id);
             if (existingDocument == null)
             {
                 return NotFound(new { message = $"Dokument mit ID {id} nicht gefunden." });
             }
 
-            // Update the document's properties
-            existingDocument.Name = document.Name ?? existingDocument.Name;
-            existingDocument.Content = document.Content ?? existingDocument.Content;
-            existingDocument.UploadDate = document.UploadDate != default ? document.UploadDate : existingDocument.UploadDate;
+            if (file != null && file.Length > 0)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await file.CopyToAsync(memoryStream);
+                    existingDocument.Content = memoryStream.ToArray();
+                }
+                existingDocument.UploadDate = DateTime.UtcNow;
+            }
+            else
+            {
+                return BadRequest("Keine Datei zum Hochladen bereitgestellt.");
+            }
 
-            // Save changes
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Dokument erfolgreich aktualisiert.", document = existingDocument });
