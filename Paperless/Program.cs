@@ -1,8 +1,19 @@
+using log4net.Config;
+using log4net.Repository;
+using log4net;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Paperless.Database;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// log4net-Setup
+ILoggerRepository logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
+var logger = LogManager.GetLogger(typeof(Program));
+
+logger.Info("Anwendung wird gestartet...");
 
 //For Mapping purposes
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -44,6 +55,27 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+
+// Globale Fehlerbehandlung mit log4net
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        logger.Error("Ein unerwarteter Fehler ist aufgetreten.", ex);
+        context.Response.StatusCode = 500;
+        await context.Response.WriteAsJsonAsync(new { error = "Interner Serverfehler. Bitte versuchen Sie es später erneut." });
+    }
+});
+
+// Beispiel-Log für erfolgreichen Start
+logger.Info("Paperless Application gestartet und läuft auf Port 8081");
+
+
 
 // Configure Kestrel to listen on port 8081
 app.Urls.Add("http://*:8081");

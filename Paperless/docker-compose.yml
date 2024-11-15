@@ -12,6 +12,8 @@ services:
       - "8081:8081"
     networks:
       - paperless-network
+    volumes:
+      - ./logs:/app/Logs
 
   webserver:
     build:

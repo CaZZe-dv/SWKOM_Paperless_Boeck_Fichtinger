@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Paperless.Database;
 using Paperless.Models;
+using log4net;
 using System;
 using System.IO;
 using System.Text;
@@ -17,6 +18,7 @@ namespace Paperless.Controllers
     [ApiController]
     public class TestController : ControllerBase
     {
+        private static readonly ILog _logger = LogManager.GetLogger(typeof(TestController));
         private readonly DatabaseDbContext _context;
         private readonly RabbitMqService _rabbitMqService;
 
@@ -57,6 +59,7 @@ namespace Paperless.Controllers
         {
             if (file == null || file.Length == 0)
             {
+                _logger.Warn("Keine Datei hochgeladen.");
                 return BadRequest("Keine Datei hochgeladen.");
             }
 
@@ -79,14 +82,18 @@ namespace Paperless.Controllers
                 _context.Documents.Add(document);
                 await _context.SaveChangesAsync();
 
-                // Send message to RabbitMQ
-                _rabbitMqService.SendMessage($"Document '{name}' uploaded successfully.");
-
+                _rabbitMqService.SendMessage($"Dokument '{name}' erfolgreich hochgeladen.");
+                _logger.Info($"Dokument {name} erfolgreich hochgeladen.");
                 return Ok(new { message = "Dokument erfolgreich hochgeladen." });
+            }
+            catch (DbUpdateException dbEx)
+            {
+                _logger.Error("Fehler beim Speichern des Dokuments in der Datenbank.", dbEx);
+                return StatusCode(500, "Fehler beim Speichern des Dokuments.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Fehler beim Speichern des Dokuments: {ex.Message}");
+                _logger.Error("Allgemeiner Fehler beim Hochladen eines Dokuments.", ex);
                 return StatusCode(500, "Fehler beim Speichern des Dokuments.");
             }
         }
@@ -99,8 +106,17 @@ namespace Paperless.Controllers
         [HttpGet("ALL")]
         public async Task<IActionResult> GetAllDocuments()
         {
-            var documents = await _context.Documents.ToListAsync();
-            return Ok(documents);
+            try
+            {
+                var documents = await _context.Documents.ToListAsync();
+                _logger.Info("Alle Dokumente erfolgreich abgerufen.");
+                return Ok(documents);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Fehler beim Abrufen der Dokumente.", ex);
+                return StatusCode(500, "Fehler beim Abrufen der Dokumente.");
+            }
         }
 
         /// <summary>
@@ -114,6 +130,7 @@ namespace Paperless.Controllers
             var document = await _context.Documents.FirstOrDefaultAsync(d => d.Id == id);
             if (document == null)
             {
+                _logger.Info($"Dokument mit ID {id} nicht gefunden.");
                 return NotFound(new { message = $"Dokument mit ID {id} nicht gefunden." });
             }
             return Ok(new { document.Name });
@@ -132,6 +149,7 @@ namespace Paperless.Controllers
             var existingDocument = await _context.Documents.FirstOrDefaultAsync(d => d.Id == id);
             if (existingDocument == null)
             {
+                _logger.Info($"Dokument mit ID {id} nicht gefunden.");
                 return NotFound(new { message = $"Dokument mit ID {id} nicht gefunden." });
             }
 
@@ -146,6 +164,7 @@ namespace Paperless.Controllers
             }
             else
             {
+                _logger.Info("Keine Datei zum Hochladen bereitgestellt.");
                 return BadRequest("Keine Datei zum Hochladen bereitgestellt.");
             }
 
@@ -153,7 +172,7 @@ namespace Paperless.Controllers
 
             // Send message to RabbitMQ
             _rabbitMqService.SendMessage($"Document with ID {id} updated successfully.");
-
+            _logger.Info("Dokument erfolgreich aktualisiert.");
             return Ok(new { message = "Dokument erfolgreich aktualisiert.", document = existingDocument });
         }
 
@@ -169,6 +188,7 @@ namespace Paperless.Controllers
             var document = await _context.Documents.FirstOrDefaultAsync(d => d.Id == id);
             if (document == null)
             {
+                _logger.Info($"Dokument mit ID {id} nicht gefunden.");
                 return NotFound(new { message = $"Dokument mit ID {id} nicht gefunden." });
             }
 
@@ -177,7 +197,7 @@ namespace Paperless.Controllers
 
             // Send message to RabbitMQ
             _rabbitMqService.SendMessage($"Document with ID {id} deleted successfully.");
-
+            _logger.Info($"Dokument mit ID {id} erfolgreich gelöscht.");
             return Ok(new { message = $"Dokument mit ID {id} erfolgreich gelöscht." });
         }
     }

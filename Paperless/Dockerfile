@@ -27,6 +27,13 @@ RUN dotnet build "Paperless.csproj" -c Release -o /app/build
 FROM build AS publish
 RUN dotnet publish "Paperless.csproj" -c Release -o /app/publish
 
+# Hier wird das log4net.config in den Container kopiert
+COPY log4net.config /app/log4net.config
+
+# Erstelle das Logs-Verzeichnis, falls es nicht existiert
+RUN mkdir -p /app/Logs
+
+
 # Final stage
 FROM base AS final
 WORKDIR /app
