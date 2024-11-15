@@ -5,6 +5,7 @@ services:
     build: .
     depends_on:
       - "db"
+      - "rabbitmq"
     environment:
       ConnectionStrings__DefaultConnection: "Host=db;Database=postgres;Username=postgres;Password=postgres"
     ports:
@@ -14,8 +15,8 @@ services:
 
   webserver:
     build:
-      context: ../Paperless_ui  # Zugriff auf das UI-Projekt im übergeordneten Verzeichnis
-      dockerfile: Dockerfile    # Dockerfile im Paperless_ui-Verzeichnis
+      context: ../Paperless_ui
+      dockerfile: Dockerfile
     ports:
       - "80:80"
     networks:
@@ -28,10 +29,21 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
     ports:
-      - 5432:5432
+      - "5432:5432"
     restart: always
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - paperless-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"  # Port for RabbitMQ broker
+      - "15672:15672"  # Port for RabbitMQ Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
     networks:
       - paperless-network
 

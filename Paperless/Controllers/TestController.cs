@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Paperless.Database;
 using Paperless.Models;
+using System;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Paperless.Controllers
@@ -15,11 +18,13 @@ namespace Paperless.Controllers
     public class TestController : ControllerBase
     {
         private readonly DatabaseDbContext _context;
+        private readonly RabbitMqService _rabbitMqService;
+
         public TestController(DatabaseDbContext context)
         {
             _context = context;
+            _rabbitMqService = new RabbitMqService();
         }
-
 
         // ================== test cases ==================
         /// <summary>
@@ -42,10 +47,7 @@ namespace Paperless.Controllers
             return Ok(new { message = "Seas das geht an die UI" });
         }
 
-
-
         // ================== CREATE ==================
-
         /// <summary>
         /// Lädt ein neues Dokument hoch.
         /// </summary>
@@ -73,20 +75,23 @@ namespace Paperless.Controllers
             };
 
             try
-    {
+            {
                 _context.Documents.Add(document);
                 await _context.SaveChangesAsync();
+
+                // Send message to RabbitMQ
+                _rabbitMqService.SendMessage($"Document '{name}' uploaded successfully.");
+
                 return Ok(new { message = "Dokument erfolgreich hochgeladen." });
-            }catch (Exception ex)
+            }
+            catch (Exception ex)
             {
-                // Logge den Fehler
                 Console.WriteLine($"Fehler beim Speichern des Dokuments: {ex.Message}");
                 return StatusCode(500, "Fehler beim Speichern des Dokuments.");
             }
         }
 
         // ================== READ ==================
-
         /// <summary>
         /// Gibt alle Dokumente zurück.
         /// </summary>
@@ -115,7 +120,6 @@ namespace Paperless.Controllers
         }
 
         // ================== UPDATE ==================
-
         /// <summary>
         /// Aktualisiert die Metadaten eines Dokuments.
         /// </summary>
@@ -147,11 +151,13 @@ namespace Paperless.Controllers
 
             await _context.SaveChangesAsync();
 
+            // Send message to RabbitMQ
+            _rabbitMqService.SendMessage($"Document with ID {id} updated successfully.");
+
             return Ok(new { message = "Dokument erfolgreich aktualisiert.", document = existingDocument });
         }
 
         // ================== DELETE ==================
-
         /// <summary>
         /// Löscht ein Dokument.
         /// </summary>
@@ -166,9 +172,11 @@ namespace Paperless.Controllers
                 return NotFound(new { message = $"Dokument mit ID {id} nicht gefunden." });
             }
 
-            // Remove the document from the database
             _context.Documents.Remove(document);
             await _context.SaveChangesAsync();
+
+            // Send message to RabbitMQ
+            _rabbitMqService.SendMessage($"Document with ID {id} deleted successfully.");
 
             return Ok(new { message = $"Dokument mit ID {id} erfolgreich gelöscht." });
         }
