@@ -5,7 +5,9 @@ VisualStudioVersion = 17.11.35312.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paperless", "Paperless\Paperless.csproj", "{3392569E-5679-44CB-AC09-311319018A92}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless_ui", "Paperless_ui\Paperless_ui.csproj", "{3C9D1813-2372-4013-BB73-C03D2CE0E62F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paperless_ui", "Paperless_ui\Paperless_ui.csproj", "{3C9D1813-2372-4013-BB73-C03D2CE0E62F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paperless_OCR", "Paperless_OCR\Paperless_OCR.csproj", "{0D450EEC-0213-417D-B35F-A7CB1F4A4AFC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{3C9D1813-2372-4013-BB73-C03D2CE0E62F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C9D1813-2372-4013-BB73-C03D2CE0E62F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C9D1813-2372-4013-BB73-C03D2CE0E62F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D450EEC-0213-417D-B35F-A7CB1F4A4AFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D450EEC-0213-417D-B35F-A7CB1F4A4AFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D450EEC-0213-417D-B35F-A7CB1F4A4AFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D450EEC-0213-417D-B35F-A7CB1F4A4AFC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

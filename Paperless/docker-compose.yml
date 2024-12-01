@@ -41,13 +41,24 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     ports:
-      - "5672:5672"  # Port for RabbitMQ broker
-      - "15672:15672"  # Port for RabbitMQ Management UI
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: user
       RABBITMQ_DEFAULT_PASS: password
     networks:
       - paperless-network
+
+  ocrworker:
+    build:
+      context: ../Paperless_OCR
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    networks:
+      - paperless-network
+    depends_on:
+      - rabbitmq
+    restart: always
 
 volumes:
   pgdata: {}
