@@ -4,10 +4,15 @@ using Microsoft.EntityFrameworkCore;
 using Paperless.Database;
 using Paperless.Models;
 using log4net;
+using Minio;
+using Minio.DataModel.Args;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text;
+using System.Linq;
 using System.Threading.Tasks;
+using Minio.ApiEndpoints;
+using System.Reactive.Linq;
 
 namespace Paperless.Controllers
 {
@@ -21,11 +26,20 @@ namespace Paperless.Controllers
         private static readonly ILog _logger = LogManager.GetLogger(typeof(TestController));
         private readonly DatabaseDbContext _context;
         private readonly RabbitMqService _rabbitMqService;
+        private readonly IMinioClient _minioClient;
+        private const string BucketName = "uploads"; // Definierter Bucket-Name für MinIO
 
-        public TestController(DatabaseDbContext context)
+        public TestController(DatabaseDbContext context, ILogger<TestController> logger)
         {
             _context = context;
             _rabbitMqService = new RabbitMqService();
+
+            // MinIO Client einrichten
+            _minioClient = new MinioClient()
+                .WithEndpoint("minio", 9000) // MinIO-Serveradresse
+                .WithCredentials("minioadmin", "minioadmin") // MinIO-Anmeldedaten
+                .WithSSL(false) // SSL deaktiviert
+                .Build();
         }
 
         // ================== test cases ==================
@@ -50,10 +64,6 @@ namespace Paperless.Controllers
         }
 
         // ================== CREATE ==================
-        /// <summary>
-        /// Lädt ein neues Dokument hoch.
-        /// </summary>
-        /// <returns>Eine Bestätigung des Uploads</returns>
         [HttpPost("upload")]
         public async Task<IActionResult> UploadDocument([FromForm] IFormFile file, [FromForm] string name)
         {
@@ -79,11 +89,17 @@ namespace Paperless.Controllers
 
             try
             {
+                // Dokument in der lokalen Datenbank speichern
                 _context.Documents.Add(document);
                 await _context.SaveChangesAsync();
 
+                // Senden Sie die Datei an MinIO
+                await UploadFileToMinio(file);
+
+                // Nachricht an RabbitMQ senden
                 _rabbitMqService.SendMessage($"Dokument '{name}' erfolgreich hochgeladen.");
                 _logger.Info($"Dokument {name} erfolgreich hochgeladen.");
+
                 return Ok(new { message = "Dokument erfolgreich hochgeladen." });
             }
             catch (DbUpdateException dbEx)
@@ -97,6 +113,110 @@ namespace Paperless.Controllers
                 return StatusCode(500, "Fehler beim Speichern des Dokuments.");
             }
         }
+
+        // ================== MinIO Upload ==================
+        private async Task UploadFileToMinio(IFormFile file)
+        {
+            try
+            {
+                // Bucket überprüfen und erstellen, falls er nicht existiert
+                await EnsureBucketExists();
+
+                var fileName = Path.GetFileName(file.FileName);
+                await using var fileStream = file.OpenReadStream();
+
+                // Datei zu MinIO hochladen
+                await _minioClient.PutObjectAsync(new PutObjectArgs()
+                    .WithBucket(BucketName)
+                    .WithObject(fileName)
+                    .WithStreamData(fileStream)
+                    .WithObjectSize(file.Length)
+                    .WithContentType(file.ContentType));
+
+                _logger.Info($"Datei '{fileName}' erfolgreich zu MinIO hochgeladen.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Fehler beim Hochladen der Datei zu MinIO.", ex);
+                throw;
+            }
+        }
+
+        // ================== MinIO Bucket sicherstellen ==================
+        private async Task EnsureBucketExists()
+        {
+            try
+            {
+                bool found = await _minioClient.BucketExistsAsync(new BucketExistsArgs().WithBucket(BucketName));
+                if (!found)
+                {
+                    await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(BucketName));
+                    _logger.Info($"Bucket '{BucketName}' erfolgreich erstellt.");
+                }
+                else
+                {
+                    _logger.Info($"Bucket '{BucketName}' existiert bereits.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Fehler beim Überprüfen oder Erstellen des Buckets '{BucketName}'.", ex);
+                throw;
+            }
+        }
+        // ================== READ ==================
+        [HttpGet("files")]
+        public async Task<IActionResult> ListFiles()
+        {
+            var objects = new List<string>();
+
+            try
+            {
+                // ListObjectsAsync returns an IObservable
+                var observable = _minioClient.ListObjectsAsync(new ListObjectsArgs().WithBucket(BucketName));
+
+                // Convert the observable to a list
+                var objectList = await observable.ToList();
+
+                // Collect object keys
+                foreach (var item in objectList)
+                {
+                    objects.Add(item.Key);
+                }
+
+                _logger.Info($"Erfolgreich die Liste der Dateien im Bucket '{BucketName}' abgerufen.");
+                return Ok(objects);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Fehler beim Abrufen der Dateien aus MinIO.", ex);
+                return StatusCode(500, new { error = $"Fehler beim Abrufen der Dateien: {ex.Message}" });
+            }
+        }
+
+        // ================== DELETE ==================
+        [HttpDelete("delete/{fileName}")]
+        public async Task<IActionResult> DeleteFile(string fileName)
+        {
+            try
+            {
+                await _minioClient.RemoveObjectAsync(new RemoveObjectArgs()
+                    .WithBucket(BucketName)
+                    .WithObject(fileName));
+
+                _logger.Info($"Datei '{fileName}' erfolgreich aus dem Bucket '{BucketName}' gelöscht.");
+                return Ok(new { message = $"Datei '{fileName}' erfolgreich gelöscht." });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Fehler beim Löschen der Datei aus MinIO.", ex);
+                return StatusCode(500, new { message = $"Fehler beim Löschen der Datei: {ex.Message}" });
+            }
+        }
+
+
+
+
 
         // ================== READ ==================
         /// <summary>

@@ -2,11 +2,13 @@
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 
-# Installiere Ghostscript und Tesseract
+# Installiere Ghostscript, Tesseract und Leptonica
 USER root
 RUN apt-get update && apt-get install -y \
     ghostscript \
-    tesseract-ocr
+    tesseract-ocr \
+    libleptonica-dev \
+    && apt-get clean
 
 # Setze zurück auf einen nicht-root Benutzer (empfohlen für Sicherheit)
 USER app
