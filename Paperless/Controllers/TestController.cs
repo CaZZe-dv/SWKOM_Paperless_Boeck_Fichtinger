@@ -63,29 +63,29 @@ namespace Paperless.Controllers
             return Ok(new { message = "Seas das geht an die UI" });
         }
 
-        // ================== CREATE ==================
-        [HttpPost("upload")]
-        public async Task<IActionResult> UploadDocument([FromForm] IFormFile file, [FromForm] string name)
-        {
-            if (file == null || file.Length == 0)
+            // ================== CREATE ==================
+            [HttpPost("upload")]
+            public async Task<IActionResult> UploadDocument([FromForm] IFormFile file, [FromForm] string name)
             {
-                _logger.Warn("Keine Datei hochgeladen.");
-                return BadRequest("Keine Datei hochgeladen.");
-            }
+                if (file == null || file.Length == 0)
+                {
+                    _logger.Warn("Keine Datei hochgeladen.");
+                    return BadRequest("Keine Datei hochgeladen.");
+                }
 
-            byte[] fileBytes;
-            using (var memoryStream = new MemoryStream())
-            {
-                await file.CopyToAsync(memoryStream);
-                fileBytes = memoryStream.ToArray();
-            }
+                byte[] fileBytes;
+                using (var memoryStream = new MemoryStream())
+                {
+                    await file.CopyToAsync(memoryStream);
+                    fileBytes = memoryStream.ToArray();
+                }
 
-            var document = new Document
-            {
-                Name = name,
-                Content = fileBytes,
-                UploadDate = DateTime.UtcNow
-            };
+                var document = new Document
+                {
+                    Name = name,
+                    Content = fileBytes,
+                    UploadDate = DateTime.UtcNow
+                };
 
             try
             {
@@ -93,14 +93,14 @@ namespace Paperless.Controllers
                 _context.Documents.Add(document);
                 await _context.SaveChangesAsync();
 
-                // Senden Sie die Datei an MinIO
-                await UploadFileToMinio(file);
+                // Datei zu MinIO hochladen und den Pfad zurückbekommen
+                string filePath = await UploadFileToMinio(file);
 
-                // Nachricht an RabbitMQ senden
-                _rabbitMqService.SendMessage($"Dokument '{name}' erfolgreich hochgeladen.");
-                _logger.Info($"Dokument {name} erfolgreich hochgeladen.");
+                // Nachricht an RabbitMQ senden, einschließlich des MinIO-Pfads
+                _rabbitMqService.SendMessage($"Dokument '{name}' erfolgreich hochgeladen. Pfad: {filePath}");
+                _logger.Info($"Dokument {name} erfolgreich hochgeladen. Pfad: {filePath}");
 
-                return Ok(new { message = "Dokument erfolgreich hochgeladen." });
+                return Ok(new { message = "Dokument erfolgreich hochgeladen.", filePath });
             }
             catch (DbUpdateException dbEx)
             {
@@ -115,7 +115,7 @@ namespace Paperless.Controllers
         }
 
         // ================== MinIO Upload ==================
-        private async Task UploadFileToMinio(IFormFile file)
+        private async Task<string> UploadFileToMinio(IFormFile file)
         {
             try
             {
@@ -134,6 +134,9 @@ namespace Paperless.Controllers
                     .WithContentType(file.ContentType));
 
                 _logger.Info($"Datei '{fileName}' erfolgreich zu MinIO hochgeladen.");
+
+                // Den Pfad der hochgeladenen Datei zurückgeben
+                return $"{BucketName}/{fileName}";
             }
             catch (Exception ex)
             {
